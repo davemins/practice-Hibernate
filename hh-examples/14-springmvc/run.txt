@@ -1,0 +1,9 @@
+
+# Port number 8205 (defined with the property cargo.rmi.port) is in use.
+gradle --stop
+
+gradle war
+gradle cargoRunLocal
+
+http://localhost:8080/springmvc/albums
+

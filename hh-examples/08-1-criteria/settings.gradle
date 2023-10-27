@@ -1,0 +1,19 @@
+// Gradle 5.6 above
+// https://docs.gradle.org/5.6/userguide/plugins.html#sec:plugin_version_management
+pluginManagement {
+  plugins {
+    id 'org.jetbrains.kotlin.jvm'           version 'latest.release'
+    id 'org.jetbrains.kotlin.kapt'          version 'latest.release'
+    id 'org.jetbrains.kotlin.plugin.jpa'    version 'latest.release'
+    id 'org.jetbrains.kotlin.plugin.spring' version 'latest.release'
+
+    id 'org.springframework.boot'           version 'latest.release'
+    id 'io.spring.dependency-management'    version 'latest.release'
+
+    id 'nu.studer.jooq'                     version 'latest.release'
+    id 'org.flywaydb.flyway'                version 'latest.release'
+
+    id 'io.freefair.lombok'                 version 'latest.release'
+  }
+}
+

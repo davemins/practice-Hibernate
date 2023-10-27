@@ -1,0 +1,30 @@
+plugins {
+  id 'java'
+  id 'application'
+  id 'io.freefair.lombok'
+
+  id 'org.springframework.boot'        apply false
+  id 'io.spring.dependency-management' apply false
+}
+
+apply plugin: 'io.spring.dependency-management'
+dependencyManagement {
+  imports {
+    mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+  }
+}
+
+application {
+  mainClass = project.findProperty('mainClass') ?: 'exercise.App'
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  // Slf4j
+  implementation     'org.slf4j:slf4j-api'
+  runtimeOnly        'ch.qos.logback:logback-classic'
+}
+

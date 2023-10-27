@@ -1,0 +1,197 @@
+plugins {
+  id 'java'
+  id 'application'
+
+  id 'org.jetbrains.kotlin.jvm'
+  id 'org.jetbrains.kotlin.plugin.jpa'    // --> plugin.noarg
+  id 'org.jetbrains.kotlin.plugin.spring' // --> plugin.allopen
+
+  id 'org.springframework.boot'        apply false
+  id 'io.spring.dependency-management' apply false
+}
+
+allprojects {
+  apply plugin: 'io.spring.dependency-management'
+  dependencyManagement {
+    imports {
+      mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+    }
+  }
+  ext['kotlin.version'] = 'latest.release'
+
+  application {
+    mainClass = project.findProperty('mainClass') ?: 'com.oreilly.hh.QueryTestKt'
+  }
+
+  // Open JPA entities in Kotlin for Hibernate
+  allOpen {
+    annotation("jakarta.persistence.Entity")
+    annotation("jakarta.persistence.Embeddable")
+    annotation("jakarta.persistence.MappedSuperclass")
+  }
+
+  task cleanDb(type: Delete) {
+    group = 'Application'
+    description = 'Cleans build/music.*.db'
+
+    delete fileTree('build') {
+        include '**/music.*.db'
+    }
+  }
+
+  task cleanAll(dependsOn: clean, type: Delete) {
+    group = 'Application'
+    description = 'Cleans build/gralde, build/eclipse, and build itself'
+
+    delete 'bin'
+  }
+}
+
+allprojects {
+  // Kotlin compiler is configured to generate Java 11 bytecode (Java 6 by default).
+  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
+    kotlinOptions {
+      jvmTarget = "16"
+      freeCompilerArgs = ["-Xjsr305=strict", '-Xjvm-default=all']
+    }
+  }
+
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    // Kotlin
+    implementation     'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+    implementation     'org.jetbrains.kotlin:kotlin-reflect'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
+
+    implementation     'io.github.microutils:kotlin-logging:latest.release'
+
+    // Slf4j
+    implementation     'org.slf4j:slf4j-api'
+    runtimeOnly        'ch.qos.logback:logback-classic'
+
+    // JUnit 5
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
+
+    // Hibernate
+    implementation     'org.hibernate.orm:hibernate-core'
+    implementation     'org.hibernate.orm:hibernate-ant'
+    runtimeOnly        'org.hibernate.orm:hibernate-hikaricp'
+
+    // JDBC Driver
+    runtimeOnly        'com.h2database:h2'
+    runtimeOnly        'org.postgresql:postgresql'
+  }
+}
+
+// Test
+allprojects {
+  test {
+    useJUnitPlatform()
+
+    outputs.upToDateWhen {false}
+    testLogging {
+      events = ['passed', 'skipped', 'failed']
+      showStandardStreams = true
+      exceptionFormat = 'full'
+    }
+  }
+}
+
+// SQL
+allprojects {
+  configurations {
+    dbtool
+  }
+
+  dependencies {
+    dbtool 'com.h2database:h2'
+    dbtool 'org.hsqldb:hsqldb'
+    dbtool 'org.postgresql:postgresql'
+  }
+
+  task dbinit(type: JavaExec) {
+    group = 'Application'
+    description = 'Initializes Database'
+
+    mainClass = 'org.h2.tools.RunScript'
+    args   '-url',        jdbcUrl
+    args   '-user',       jdbcUsername
+    args   '-password',   jdbcPassword
+    args   '-script',     'setup.sql'       // default: backup.sql
+    args   '-showResults'
+    classpath = configurations.dbtool
+  }
+
+  task db(type: JavaExec) {
+    group = 'Application'
+    description = 'Runs DatabaseManagerSwing'
+
+    mainClass = 'org.hsqldb.util.DatabaseManagerSwing'
+    args   '--driver',    jdbcDriver
+    args   '--url',       jdbcUrl
+    args   '--user',      jdbcUsername
+    if (jdbcPassword != '') {               // for Windows
+      args '--password',  jdbcPassword
+    }
+    classpath = configurations.dbtool       // libraries only
+  }
+
+  task schema(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Generates the database schema from entities'
+
+    mainClass = 'org.hibernate.tool.hbm2ddl.SchemaExport'
+    args '--config=hibernate.cfg.xml', '--text', '--format', '--delimiter=;'
+    //args '--create'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+
+  task schemajpa(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Generates the database schema from JPA entities'
+
+    mainClass = 'com.oreilly.hh.GenerateSchemaKt'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+
+}
+
+// run Main classes
+allprojects {
+  task ctest(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Runs CreateTest'
+
+    mainClass = 'com.oreilly.hh.CreateTestKt'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+
+  task qtest(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Runs QueryTest'
+
+    mainClass = 'com.oreilly.hh.QueryTestKt'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+
+  task qtest2(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Runs QueryTest2'
+
+    mainClass = 'com.oreilly.hh.QueryTest2Kt'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+
+  task atest(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Runs AlbumTest'
+
+    mainClass = 'com.oreilly.hh.AlbumTestKt'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+}
+

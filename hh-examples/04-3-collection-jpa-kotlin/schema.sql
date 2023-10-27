@@ -1,0 +1,15 @@
+drop table if exists Artist cascade ;
+drop table if exists Track cascade ;
+drop table if exists TRACK_ARTISTS cascade ;
+drop table if exists TRACK_COMMENTS cascade ;
+drop sequence if exists Artist_SEQ;
+drop sequence if exists Track_SEQ;
+create sequence Artist_SEQ start with 1 increment by 50;
+create sequence Track_SEQ start with 1 increment by 50;
+create table Artist (ARTIST_ID integer not null, name varchar(255) unique, primary key (ARTIST_ID));
+create table Track (TRACK_ID integer not null, added date, playTime time(6), volume smallint not null, filePath varchar(255), title varchar(255), primary key (TRACK_ID));
+create table TRACK_ARTISTS (ARTIST_ID integer not null, TRACK_ID integer not null, primary key (ARTIST_ID, TRACK_ID));
+create table TRACK_COMMENTS (TRACK_ID integer not null, COMMENT varchar(255));
+alter table if exists TRACK_ARTISTS add constraint FKt9is5vo46ulpkwnk48yg7n42i foreign key (ARTIST_ID) references Artist;
+alter table if exists TRACK_ARTISTS add constraint FK9r7at1j9ttvvhiy45b1uesw8d foreign key (TRACK_ID) references Track;
+alter table if exists TRACK_COMMENTS add constraint FKbl1s5slsa8eh7db3nwny6d1j6 foreign key (TRACK_ID) references Track;

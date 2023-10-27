@@ -1,0 +1,84 @@
+plugins {
+  id 'java'
+  id 'application'
+  id 'io.freefair.lombok'
+
+  id 'org.springframework.boot'        apply false
+  id 'io.spring.dependency-management' apply false
+}
+
+apply plugin: 'io.spring.dependency-management'
+dependencyManagement {
+  imports {
+    mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+  }
+}
+
+application {
+  mainClass = project.findProperty('mainClass') ?: 'exercise.App'
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  // Slf4j
+  implementation     'org.slf4j:slf4j-api'
+  runtimeOnly        'ch.qos.logback:logback-classic'
+
+  // JUnit 5
+  testImplementation 'org.junit.jupiter:junit-jupiter'
+  testRuntimeOnly    'org.junit.platform:junit-platform-launcher'
+  testImplementation 'org.assertj:assertj-core'
+
+  // Hibernate
+  implementation     'org.hibernate.orm:hibernate-core'
+  implementation     'org.hibernate.orm:hibernate-ant'
+
+  // JDBC Driver
+  runtimeOnly        'com.h2database:h2'
+}
+
+test {
+  useJUnitPlatform()
+}
+
+// SQL
+allprojects {
+  configurations {
+    dbtool
+  }
+
+  dependencies {
+    dbtool 'com.h2database:h2'
+    dbtool 'org.hsqldb:hsqldb'
+    dbtool 'org.postgresql:postgresql'
+  }
+
+  task db(type: JavaExec) {
+    group = 'Application'
+    description = 'Runs DatabaseManagerSwing'
+
+    mainClass = 'org.hsqldb.util.DatabaseManagerSwing'
+    args   '--driver',    jdbcDriver
+    args   '--url',       jdbcUrl
+    args   '--user',      jdbcUsername
+    if (jdbcPassword != '') {               // for Windows
+      args '--password',  jdbcPassword
+    }
+    classpath = configurations.dbtool       // libraries only
+  }
+
+  task schema(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Generates the database schema from entities'
+
+    mainClass = 'org.hibernate.tool.hbm2ddl.SchemaExport'
+    args '--config=hibernate.cfg.xml', '--text', '--format', '--delimiter=;'
+    //args '--create'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+
+}
+

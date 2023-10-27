@@ -1,0 +1,186 @@
+plugins {
+  id 'java'
+  id 'application'
+  id 'io.freefair.lombok'
+
+  id 'org.springframework.boot'        apply false
+  id 'io.spring.dependency-management' apply false
+}
+
+allprojects {
+  apply plugin: 'io.spring.dependency-management'
+  dependencyManagement {
+    imports {
+      mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+    }
+  }
+
+  application {
+    mainClass = project.findProperty('mainClass') ?: 'com.oreilly.hh.QueryTest'
+  }
+
+  task cleanDb(type: Delete) {
+    group = 'Application'
+    description = 'Cleans build/music.*.db'
+
+    delete fileTree('build') {
+        include '**/music.*.db'
+    }
+  }
+
+  task cleanAll(dependsOn: clean, type: Delete) {
+    group = 'Application'
+    description = 'Cleans build/gralde, build/eclipse, and build itself'
+
+    delete 'bin'
+  }
+}
+
+allprojects {
+  tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:deprecation'  // @SuppressWarnings("deprecation")
+    options.compilerArgs << '-Xlint:unchecked'    // @SuppressWarnings("unchecked")
+    options.compilerArgs << '-parameters'
+  }
+
+  tasks.withType(Test) {
+    systemProperty "file.encoding", "UTF-8"
+  }
+
+  sourceSets {
+    main.resources.srcDir 'src/main/java'
+    test.resources.srcDir 'src/test/java'
+  }
+
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    // Slf4j
+    implementation     'org.slf4j:slf4j-api'
+    runtimeOnly        'ch.qos.logback:logback-classic'
+
+    // JUnit 5
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.assertj:assertj-core'
+
+    // Hibernate
+    implementation     'org.hibernate.orm:hibernate-core'
+    runtimeOnly        'org.hibernate.orm:hibernate-hikaricp'
+
+    // JDBC Driver
+    runtimeOnly        'com.h2database:h2'
+    runtimeOnly        'org.postgresql:postgresql'
+  }
+}
+
+// Test
+allprojects {
+  test {
+    useJUnitPlatform()
+
+    outputs.upToDateWhen {false}
+    testLogging {
+      events = ['passed', 'skipped', 'failed']
+      showStandardStreams = true
+      exceptionFormat = 'full'
+    }
+  }
+}
+
+// SQL
+allprojects {
+  configurations {
+    dbtool
+  }
+
+  dependencies {
+    dbtool 'com.h2database:h2'
+    dbtool 'org.hsqldb:hsqldb'
+    dbtool 'org.postgresql:postgresql'
+  }
+
+  task dbinit(type: JavaExec) {
+    group = 'Application'
+    description = 'Initializes Database'
+
+    mainClass = 'org.h2.tools.RunScript'
+    args   '-url',        jdbcUrl
+    args   '-user',       jdbcUsername
+    args   '-password',   jdbcPassword
+    args   '-script',     'setup.sql'       // default: backup.sql
+    args   '-showResults'
+    classpath = configurations.dbtool
+  }
+
+  task db(type: JavaExec) {
+    group = 'Application'
+    description = 'Runs DatabaseManagerSwing'
+
+    mainClass = 'org.hsqldb.util.DatabaseManagerSwing'
+    args   '--driver',    jdbcDriver
+    args   '--url',       jdbcUrl
+    args   '--user',      jdbcUsername
+    if (jdbcPassword != '') {               // for Windows
+      args '--password',  jdbcPassword
+    }
+    classpath = configurations.dbtool       // libraries only
+  }
+
+  task schema(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Generates the database schema from entities'
+
+    mainClass = 'org.hibernate.tool.hbm2ddl.SchemaExport'
+    args '--config=hibernate.cfg.xml', '--text', '--format', '--delimiter=;'
+    //args '--create'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+
+  task schemajpa(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Generates the database schema from JPA entities'
+
+    mainClass = 'com.oreilly.hh.GenerateSchema'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+
+}
+
+// run Main classes
+allprojects {
+  task ctest(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Runs CreateTest'
+
+    mainClass = 'com.oreilly.hh.CreateTest'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+
+  task qtest(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Runs QueryTest'
+
+    mainClass = 'com.oreilly.hh.QueryTest'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+
+  task qtest2(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Runs QueryTest2'
+
+    mainClass = 'com.oreilly.hh.QueryTest2'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+
+  task atest(dependsOn: classes, type: JavaExec) {
+    group = 'Application'
+    description = 'Runs AlbumTest'
+
+    mainClass = 'com.oreilly.hh.AlbumTest'
+    classpath = sourceSets.main.runtimeClasspath
+  }
+}
+

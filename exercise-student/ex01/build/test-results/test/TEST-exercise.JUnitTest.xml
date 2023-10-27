@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="exercise.JUnitTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2023-10-27T04:06:58" hostname="DAVEMINS-WINBOO" time="0.007">
+  <properties/>
+  <testcase name="testOne()" classname="exercise.JUnitTest" time="0.005"/>
+  <testcase name="testTwo()" classname="exercise.JUnitTest" time="0.001"/>
+  <system-out><![CDATA[@BeforeAll setUpClass()
+@BeforeEach setUp()
+@Test tesetOne()
+@AfterEach tearDown()
+@BeforeEach setUp()
+@Test testTwo()
+@AfterEach tearDown()
+@AfterAll tearDownClass()
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
